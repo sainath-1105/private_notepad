@@ -1,12 +1,25 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const fs = require('fs');
-const path = require('path');
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const DB_PATH = path.join(__dirname, 'db.json');
+
+// Connect to MongoDB
+const MONGODB_URI = process.env.MONGODB_URI;
+if (MONGODB_URI) {
+    mongoose.connect(MONGODB_URI)
+        .then(() => console.log('Connected to MongoDB Atlas'))
+        .catch(err => console.error('MongoDB connection error:', err));
+}
+
+// Vault Schema
+const VaultSchema = new mongoose.Schema({
+    syncId: { type: String, unique: true, required: true },
+    encryptedContent: { type: String, required: true },
+    hash: { type: String, required: true },
+    lastUpdated: { type: Date, default: Date.now }
+});
+
+const Vault = mongoose.model('Vault', VaultSchema);
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -14,58 +27,52 @@ app.use(bodyParser.json());
 // Serve frontend flat files
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Initialize flat file DB if not exists
-if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify({}));
-}
-
-function readDB() {
-    return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
-}
-
-function writeDB(data) {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-}
-
 // REST API for Encrypted Notes
-app.get('/api/notes/:syncId', (req, res) => {
-    const hash = req.headers['x-vault-hash']; // Fingerprint sent from phone/laptop
-    const db = readDB();
-    const vault = db[req.params.syncId];
+app.get('/api/notes/:syncId', async (req, res) => {
+    const hash = req.headers['x-vault-hash'];
 
-    if (vault) {
-        // If vault exists, check if the fingerprint matches
-        if (vault.hash === hash) {
-            res.json(vault);
+    try {
+        const vault = await Vault.findOne({ syncId: req.params.syncId });
+
+        if (vault) {
+            if (vault.hash === hash) {
+                res.json(vault);
+            } else {
+                res.status(403).json({ error: 'This Sync ID is already taken.' });
+            }
         } else {
-            res.status(403).json({ error: 'This Sync ID is already taken by someone else with a different code.' });
+            res.status(404).json({ error: 'Vault not found' });
         }
-    } else {
-        res.status(404).json({ error: 'Vault not found' });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
     }
 });
 
-app.post('/api/notes', (req, res) => {
+app.post('/api/notes', async (req, res) => {
     const { syncId, encryptedContent, hash } = req.body;
     if (!syncId || !encryptedContent || !hash) {
         return res.status(400).json({ error: 'Missing data' });
     }
 
-    const db = readDB();
-    const existingVault = db[syncId];
+    try {
+        let vault = await Vault.findOne({ syncId });
 
-    if (existingVault && existingVault.hash !== hash) {
-        return res.status(403).json({ error: 'Cannot overwrite. This Sync ID is locked to another security code.' });
+        if (vault && vault.hash !== hash) {
+            return res.status(403).json({ error: 'Locked to another code.' });
+        }
+
+        if (vault) {
+            vault.encryptedContent = encryptedContent;
+            vault.lastUpdated = Date.now();
+            await vault.save();
+        } else {
+            await Vault.create({ syncId, encryptedContent, hash });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Storage error' });
     }
-
-    db[syncId] = {
-        encryptedContent,
-        hash, // Save the fingerprint for next time
-        lastUpdated: new Date().toISOString()
-    };
-    writeDB(db);
-
-    res.json({ success: true });
 });
 
 app.listen(PORT, () => {
