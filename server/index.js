@@ -29,24 +29,38 @@ function writeDB(data) {
 
 // REST API for Encrypted Notes
 app.get('/api/notes/:syncId', (req, res) => {
+    const hash = req.headers['x-vault-hash']; // Fingerprint sent from phone/laptop
     const db = readDB();
-    const note = db[req.params.syncId];
-    if (note) {
-        res.json(note);
+    const vault = db[req.params.syncId];
+
+    if (vault) {
+        // If vault exists, check if the fingerprint matches
+        if (vault.hash === hash) {
+            res.json(vault);
+        } else {
+            res.status(403).json({ error: 'This Sync ID is already taken by someone else with a different code.' });
+        }
     } else {
         res.status(404).json({ error: 'Vault not found' });
     }
 });
 
 app.post('/api/notes', (req, res) => {
-    const { syncId, encryptedContent } = req.body;
-    if (!syncId || !encryptedContent) {
+    const { syncId, encryptedContent, hash } = req.body;
+    if (!syncId || !encryptedContent || !hash) {
         return res.status(400).json({ error: 'Missing data' });
     }
 
     const db = readDB();
+    const existingVault = db[syncId];
+
+    if (existingVault && existingVault.hash !== hash) {
+        return res.status(403).json({ error: 'Cannot overwrite. This Sync ID is locked to another security code.' });
+    }
+
     db[syncId] = {
         encryptedContent,
+        hash, // Save the fingerprint for next time
         lastUpdated: new Date().toISOString()
     };
     writeDB(db);

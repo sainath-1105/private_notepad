@@ -37,14 +37,26 @@ function showToast(msg) {
 
 async function fetchRemoteData() {
     try {
-        const res = await fetch(`${API_BASE}/notes/${currentState.syncId}`);
+        const hash = await SecureCrypto.getHash(currentState.syncId + currentState.securityCode);
+        const res = await fetch(`${API_BASE}/notes/${currentState.syncId}`, {
+            headers: { 'x-vault-hash': hash }
+        });
+
+        if (res.status === 403) {
+            throw new Error("This ID is already taken by someone else.");
+        }
+
         if (res.ok) {
             const data = await res.json();
             return data.encryptedContent;
         }
         return null;
     } catch (e) {
-        console.error("Sync failed: Offline mode.");
+        console.error("Sync failed:", e.message);
+        if (e.message.includes("taken")) {
+            showToast(e.message);
+            location.reload(); // Lock them out
+        }
         UI.statusPill.textContent = "Offline Mode";
         UI.statusPill.className = "status-pill status-offline";
         return null;
@@ -53,14 +65,22 @@ async function fetchRemoteData() {
 
 async function sendRemoteData(encrypted) {
     try {
-        await fetch(`${API_BASE}/notes`, {
+        const hash = await SecureCrypto.getHash(currentState.syncId + currentState.securityCode);
+        const res = await fetch(`${API_BASE}/notes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 syncId: currentState.syncId,
-                encryptedContent: encrypted
+                encryptedContent: encrypted,
+                hash: hash
             })
         });
+
+        if (res.status === 403) {
+            showToast("Failed to sync: This ID is locked to another code.");
+            return false;
+        }
+
         UI.statusPill.textContent = "Connected";
         UI.statusPill.className = "status-pill status-online";
         return true;
