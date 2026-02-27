@@ -1,0 +1,16 @@
+{
+    "name": "SecureVault Notes",
+    "short_name": "SecureVault",
+    "description": "End-to-End Encrypted Offline-First Notepad",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#6366f1",
+    "icons": [
+        {
+            "src": "https://cdn-icons-png.flaticon.com/512/3209/3209265.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
