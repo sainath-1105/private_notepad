@@ -14,7 +14,7 @@
     <meta property="og:description" content="Saizero: End-to-end encrypted notes that sync across all your devices.">
     <meta property="og:type" content="website">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=5.3">
+    <link rel="stylesheet" href="style.css?v=6.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap"
         rel="stylesheet">
 </head>
@@ -94,12 +94,12 @@
 
     <div id="toast" class="toast hidden"></div>
 
-    <script src="js/crypto.js?v=5.2"></script>
-    <script src="js/app.js?v=5.2"></script>
+    <script src="js/crypto.js?v=6.0"></script>
+    <script src="js/app.js?v=6.0"></script>
     <script>
         // Force update service worker immediately on change
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js?v=5.2').then(reg => {
+            navigator.serviceWorker.register('sw.js?v=6.0').then(reg => {
                 reg.onupdatefound = () => {
                     const installingWorker = reg.installing;
                     installingWorker.onstatechange = () => {

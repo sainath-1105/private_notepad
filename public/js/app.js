@@ -167,7 +167,7 @@ async function unlockVault() {
     // 1. Try to fetch from cloud
     let encrypted = await fetchRemoteData();
 
-    // 2. If no cloud or error, try local storage
+    // 2. If no cloud data found (e.g. offline or error), try local storage
     if (!encrypted) {
         encrypted = localStorage.getItem(`vault_${id}`);
     }
@@ -177,6 +177,10 @@ async function unlockVault() {
             const decrypted = await SecureCrypto.decrypt(encrypted, code);
             UI.noteInput.value = decrypted;
             currentState.localData = decrypted;
+
+            // Re-cache locally so it's available next time we are offline
+            localStorage.setItem(`vault_${id}`, encrypted);
+
             UI.lastSaved.textContent = "Last sync: " + new Date().toLocaleTimeString();
         } catch (e) {
             showToast("Wrong Security Code for this Vault");
