@@ -94,6 +94,27 @@ app.post('/api/notes', async (req, res) => {
     }
 });
 
+app.delete('/api/notes/:syncId', async (req, res) => {
+    if (!dbConnected) {
+        return res.status(503).json({ error: 'Database not connected.' });
+    }
+    const hash = req.headers['x-vault-hash'];
+
+    try {
+        const vault = await Vault.findOne({ syncId: req.params.syncId });
+        if (!vault) return res.status(404).json({ error: 'Vault not found' });
+
+        if (vault.hash !== hash) {
+            return res.status(403).json({ error: 'Permission denied.' });
+        }
+
+        await Vault.deleteOne({ syncId: req.params.syncId });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Delete error', details: err.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Cloud Sync Server running at http://localhost:${PORT}`);
     console.log(`PWA Frontend being served via index.html locally.`);

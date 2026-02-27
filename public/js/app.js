@@ -14,7 +14,9 @@ const UI = {
     activeIdDisplay: document.getElementById('activeIdDisplay'),
     lastSaved: document.getElementById('lastSaved'),
     toast: document.getElementById('toast'),
-    statusPill: document.getElementById('syncStatus')
+    statusPill: document.getElementById('syncStatus'),
+    saveExitBtn: document.getElementById('saveExitBtn'),
+    deleteVaultBtn: document.getElementById('deleteVaultBtn')
 };
 
 let currentState = {
@@ -48,6 +50,8 @@ async function fetchRemoteData() {
 
         if (res.ok) {
             const data = await res.json();
+            UI.statusPill.textContent = "Connected";
+            UI.statusPill.className = "status-pill status-online";
             return data.encryptedContent;
         }
         return null;
@@ -55,7 +59,7 @@ async function fetchRemoteData() {
         console.error("Sync failed:", e.message);
         if (e.message.includes("taken")) {
             showToast(e.message);
-            location.reload(); // Lock them out
+            location.reload();
         }
         UI.statusPill.textContent = "Offline Mode";
         UI.statusPill.className = "status-pill status-offline";
@@ -81,12 +85,35 @@ async function sendRemoteData(encrypted) {
             return false;
         }
 
-        UI.statusPill.textContent = "Connected";
-        UI.statusPill.className = "status-pill status-online";
-        return true;
+        if (res.ok) {
+            UI.statusPill.textContent = "Connected";
+            UI.statusPill.className = "status-pill status-online";
+            return true;
+        }
+        return false;
     } catch (e) {
         UI.statusPill.textContent = "Sync Pending...";
         UI.statusPill.className = "status-pill status-offline";
+        return false;
+    }
+}
+
+async function deleteRemoteVault() {
+    try {
+        const hash = await SecureCrypto.getHash(currentState.syncId + currentState.securityCode);
+        const res = await fetch(`${API_BASE}/notes/${currentState.syncId}`, {
+            method: 'DELETE',
+            headers: { 'x-vault-hash': hash }
+        });
+
+        if (res.ok) {
+            return true;
+        }
+        const err = await res.json();
+        showToast(err.error || "Delete failed");
+        return false;
+    } catch (e) {
+        showToast("Cannot delete while offline");
         return false;
     }
 }
@@ -121,12 +148,16 @@ async function unlockVault() {
             const decrypted = await SecureCrypto.decrypt(encrypted, code);
             UI.noteInput.value = decrypted;
             currentState.localData = decrypted;
+            UI.lastSaved.textContent = "Last sync: " + new Date().toLocaleTimeString();
         } catch (e) {
             showToast("Wrong Security Code for this Vault");
             UI.unlockBtn.disabled = false;
             UI.unlockBtn.textContent = "Unlock Vault";
             return;
         }
+    } else {
+        UI.noteInput.value = '';
+        currentState.localData = '';
     }
 
     // Success
@@ -138,36 +169,32 @@ async function unlockVault() {
 
 async function saveAndSync() {
     const content = UI.noteInput.value;
-    if (content === currentState.localData) return;
+    if (content === currentState.localData) return true;
 
     UI.lastSaved.textContent = "Drafting...";
 
-    // Save locally immediately (even if offline)
     try {
         const encrypted = await SecureCrypto.encrypt(content, currentState.securityCode);
         localStorage.setItem(`vault_${currentState.syncId}`, encrypted);
 
-        // Try to sync to cloud
         UI.lastSaved.textContent = "Syncing...";
         const success = await sendRemoteData(encrypted);
 
         if (success) {
             UI.lastSaved.textContent = "All changes synced";
             currentState.localData = content;
+            return true;
         } else {
             UI.lastSaved.textContent = "Saved locally (Offline)";
+            return false;
         }
     } catch (e) {
         console.error("Save error", e);
+        return false;
     }
 }
 
-// --- Event Listeners ---
-
-UI.unlockBtn.addEventListener('click', unlockVault);
-
-UI.lockBtn.addEventListener('click', () => {
-    // Clear sensitive state
+function lockVault() {
     currentState.syncId = null;
     currentState.securityCode = null;
     currentState.localData = null;
@@ -176,6 +203,38 @@ UI.lockBtn.addEventListener('click', () => {
     UI.authScreen.classList.remove('hidden');
     UI.unlockBtn.disabled = false;
     UI.unlockBtn.textContent = "Unlock Vault";
+}
+
+// --- Event Listeners ---
+
+UI.unlockBtn.addEventListener('click', unlockVault);
+
+UI.lockBtn.addEventListener('click', lockVault);
+
+UI.saveExitBtn.addEventListener('click', async () => {
+    UI.saveExitBtn.disabled = true;
+    UI.saveExitBtn.textContent = "Saving...";
+    await saveAndSync();
+    lockVault();
+    UI.saveExitBtn.disabled = false;
+    UI.saveExitBtn.textContent = "Save & Exit";
+});
+
+UI.deleteVaultBtn.addEventListener('click', async () => {
+    if (!confirm("Are you sure? This will delete your notepad FROM THE CLOUD and your password lock. This cannot be undone.")) return;
+
+    UI.deleteVaultBtn.disabled = true;
+    UI.deleteVaultBtn.textContent = "Deleting...";
+
+    const success = await deleteRemoteVault();
+    if (success) {
+        localStorage.removeItem(`vault_${currentState.syncId}`);
+        showToast("Vault deleted successfully");
+        lockVault();
+    }
+
+    UI.deleteVaultBtn.disabled = false;
+    UI.deleteVaultBtn.textContent = "Delete Notepad";
 });
 
 // Auto-sync after 1 second of inactivity

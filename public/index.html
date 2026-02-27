@@ -26,7 +26,7 @@
             <div class="auth-inputs">
                 <div class="input-field">
                     <label>Sync ID</label>
-                    <input type="text" id="syncId" placeholder="e.g. my-private-vault">
+                    <input type="text" id="syncId" placeholder="e.g. mllab">
                     <small>Same ID on all devices to sync</small>
                 </div>
                 <div class="input-field">
@@ -63,9 +63,19 @@
         </main>
 
         <footer>
-            <div id="lastSaved">All changes synced</div>
-            <div class="footer-actions">
-                <button id="manualSync" class="ghost-btn">Sync Now</button>
+            <div class="footer-left">
+                <span id="lastSaved">All changes synced</span>
+            </div>
+            <div class="footer-right">
+                <button id="manualSync" class="icon-btn" title="Sync Now">
+                    <svg viewBox="0 0 24 24" width="18" height="18">
+                        <path
+                            d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"
+                            fill="currentColor" />
+                    </svg>
+                </button>
+                <button id="saveExitBtn" class="premium-btn small">Save & Exit</button>
+                <button id="deleteVaultBtn" class="danger-btn small">Delete Notepad</button>
             </div>
         </footer>
     </div>
