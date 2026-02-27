@@ -9,10 +9,19 @@ const PORT = process.env.PORT || 4000;
 
 // Connect to MongoDB
 const MONGODB_URI = process.env.MONGODB_URI;
+let dbConnected = false;
+
 if (MONGODB_URI) {
     mongoose.connect(MONGODB_URI)
-        .then(() => console.log('Connected to MongoDB Atlas'))
-        .catch(err => console.error('MongoDB connection error:', err));
+        .then(() => {
+            console.log('Connected to MongoDB Atlas');
+            dbConnected = true;
+        })
+        .catch(err => {
+            console.error('MongoDB connection error:', err.message);
+        });
+} else {
+    console.warn('WARNING: MONGODB_URI is not set. Cloud storage will not work.');
 }
 
 // Vault Schema
@@ -33,6 +42,9 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // REST API for Encrypted Notes
 app.get('/api/notes/:syncId', async (req, res) => {
+    if (!dbConnected) {
+        return res.status(503).json({ error: 'Database not connected. Please check MONGODB_URI on Render.' });
+    }
     const hash = req.headers['x-vault-hash'];
 
     try {
@@ -48,11 +60,14 @@ app.get('/api/notes/:syncId', async (req, res) => {
             res.status(404).json({ error: 'Vault not found' });
         }
     } catch (err) {
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
 
 app.post('/api/notes', async (req, res) => {
+    if (!dbConnected) {
+        return res.status(503).json({ error: 'Database not connected. Please check MONGODB_URI on Render.' });
+    }
     const { syncId, encryptedContent, hash } = req.body;
     if (!syncId || !encryptedContent || !hash) {
         return res.status(400).json({ error: 'Missing data' });
@@ -75,7 +90,7 @@ app.post('/api/notes', async (req, res) => {
 
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Storage error' });
+        res.status(500).json({ error: 'Storage error', details: err.message });
     }
 });
 
