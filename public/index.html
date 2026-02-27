@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<!-- v3.0 -->
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SecureVault | Notes</title>
+    <title>SecureVault v4 | Notes</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=4">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap"
         rel="stylesheet">
 </head>
@@ -21,7 +20,7 @@
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
             </div>
-            <h1>SecureVault</h1>
+            <h1>SecureVault <small style="font-size: 0.5em; opacity: 0.5;">v4</small></h1>
             <p>Your notes, encrypted by you, accessible anywhere.</p>
 
             <div class="auth-inputs">
@@ -37,6 +36,10 @@
                 </div>
                 <button id="unlockBtn" class="premium-btn">Unlock Vault</button>
             </div>
+            <div style="margin-top: 2rem; opacity: 0.6; font-size: 0.8rem;">
+                Stuck on old version? <a href="javascript:location.reload(true)"
+                    style="color: var(--primary-color);">Force Update</a>
+            </div>
         </div>
     </div>
 
@@ -46,7 +49,7 @@
                 <span class="vault-name">VAULT: <span id="activeIdDisplay"></span></span>
             </div>
             <div class="header-right">
-                <div id="syncStatus" class="status-pill status-online">Connected</div>
+                <div id="syncStatus" class="status-pill status-online">Connecting...</div>
                 <button id="saveExitBtn" class="premium-btn small">Save & Exit</button>
                 <button id="deleteVaultBtn" class="danger-btn small">Delete Notepad</button>
                 <button id="lockBtn" class="icon-btn" title="Lock Vault">
@@ -83,11 +86,21 @@
 
     <div id="toast" class="toast hidden"></div>
 
-    <script src="js/crypto.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/crypto.js?v=4"></script>
+    <script src="js/app.js?v=4"></script>
     <script>
+        // Force update service worker immediately on change
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+            navigator.serviceWorker.register('sw.js?v=4').then(reg => {
+                reg.onupdatefound = () => {
+                    const installingWorker = reg.installing;
+                    installingWorker.onstatechange = () => {
+                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            window.location.reload();
+                        }
+                    };
+                };
+            });
         }
     </script>
 </body>
