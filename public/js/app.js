@@ -62,6 +62,10 @@ async function fetchRemoteData() {
             UI.statusPill.className = "status-pill status-online";
             return data.encryptedContent;
         }
+
+        // Catch-all for other errors (e.g. 404, 500)
+        UI.statusPill.textContent = "Sync Error: " + res.status;
+        UI.statusPill.className = "status-pill status-offline";
         return null;
     } catch (e) {
         console.error("Sync failed:", e.message);
@@ -105,6 +109,9 @@ async function sendRemoteData(encrypted) {
             UI.statusPill.className = "status-pill status-online";
             return true;
         }
+
+        UI.statusPill.textContent = "Sync Error: " + res.status;
+        UI.statusPill.className = "status-pill status-offline";
         return false;
     } catch (e) {
         UI.statusPill.textContent = "Sync Pending...";
