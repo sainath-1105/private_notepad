@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SecureVault v5 | Notes</title>
+    <title>SecureVault v5.2 | Notes</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=5.2">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap"
         rel="stylesheet">
 </head>
@@ -20,7 +20,7 @@
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
             </div>
-            <h1>SecureVault <small style="font-size: 0.5em; opacity: 0.5;">v5</small></h1>
+            <h1>SecureVault <small style="font-size: 0.5em; opacity: 0.5;">v5.2</small></h1>
             <p>Your notes, encrypted by you, accessible anywhere.</p>
 
             <div class="auth-inputs">
@@ -86,12 +86,12 @@
 
     <div id="toast" class="toast hidden"></div>
 
-    <script src="js/crypto.js?v=5"></script>
-    <script src="js/app.js?v=5"></script>
+    <script src="js/crypto.js?v=5.2"></script>
+    <script src="js/app.js?v=5.2"></script>
     <script>
         // Force update service worker immediately on change
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js?v=5').then(reg => {
+            navigator.serviceWorker.register('sw.js?v=5.2').then(reg => {
                 reg.onupdatefound = () => {
                     const installingWorker = reg.installing;
                     installingWorker.onstatechange = () => {

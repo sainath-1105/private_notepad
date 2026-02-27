@@ -63,7 +63,14 @@ async function fetchRemoteData() {
             return data.encryptedContent;
         }
 
-        // Catch-all for other errors (e.g. 404, 500)
+        if (res.status === 404) {
+            // New Vault - This is a success!
+            UI.statusPill.textContent = "Connected";
+            UI.statusPill.className = "status-pill status-online";
+            return null;
+        }
+
+        // Catch-all for other errors (e.g. 500)
         UI.statusPill.textContent = "Sync Error: " + res.status;
         UI.statusPill.className = "status-pill status-offline";
         return null;

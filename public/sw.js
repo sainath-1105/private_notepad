@@ -1,4 +1,4 @@
-const CACHE_NAME = 'secure-vault-v5';
+const CACHE_NAME = 'secure-vault-v5-2';
 const ASSETS = [
     './',
     './index.html',
