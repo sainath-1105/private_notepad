@@ -141,6 +141,24 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    /* Allow wrapping on small screens */
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.premium-btn.small,
+.danger-btn.small {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    min-width: unset;
+    border-radius: 8px;
 }
 
 .vault-name {
