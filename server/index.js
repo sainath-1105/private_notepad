@@ -10,17 +10,23 @@ const PORT = process.env.PORT || 4000;
 // Connect to MongoDB
 const MONGODB_URI = process.env.MONGODB_URI;
 let dbConnected = false;
+let dbError = "Connecting to database...";
 
 if (MONGODB_URI) {
+    console.log(`Attempting to connect to MongoDB (URI starts with: ${MONGODB_URI.substring(0, 15)}...)`);
     mongoose.connect(MONGODB_URI)
         .then(() => {
             console.log('Connected to MongoDB Atlas');
             dbConnected = true;
+            dbError = null;
         })
         .catch(err => {
+            dbConnected = false;
+            dbError = err.message;
             console.error('MongoDB connection error:', err.message);
         });
 } else {
+    dbError = "MONGODB_URI environment variable is missing on Render.";
     console.warn('WARNING: MONGODB_URI is not set. Cloud storage will not work.');
 }
 
@@ -43,7 +49,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 // REST API for Encrypted Notes
 app.get('/api/notes/:syncId', async (req, res) => {
     if (!dbConnected) {
-        return res.status(503).json({ error: 'Database not connected. Please check MONGODB_URI on Render.' });
+        return res.status(503).json({ error: 'Database not connected.', details: dbError });
     }
     const hash = req.headers['x-vault-hash'];
 
@@ -66,7 +72,7 @@ app.get('/api/notes/:syncId', async (req, res) => {
 
 app.post('/api/notes', async (req, res) => {
     if (!dbConnected) {
-        return res.status(503).json({ error: 'Database not connected. Please check MONGODB_URI on Render.' });
+        return res.status(503).json({ error: 'Database not connected.', details: dbError });
     }
     const { syncId, encryptedContent, hash } = req.body;
     if (!syncId || !encryptedContent || !hash) {
@@ -96,7 +102,7 @@ app.post('/api/notes', async (req, res) => {
 
 app.delete('/api/notes/:syncId', async (req, res) => {
     if (!dbConnected) {
-        return res.status(503).json({ error: 'Database not connected.' });
+        return res.status(503).json({ error: 'Database not connected.', details: dbError });
     }
     const hash = req.headers['x-vault-hash'];
 

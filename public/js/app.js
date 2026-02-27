@@ -48,6 +48,14 @@ async function fetchRemoteData() {
             throw new Error("This ID is already taken by someone else.");
         }
 
+        if (res.status === 503) {
+            const err = await res.json();
+            UI.statusPill.textContent = "DB Error: " + (err.details ? err.details.substring(0, 15) : "Offline");
+            UI.statusPill.className = "status-pill status-offline";
+            if (err.details) showToast("Cloud Error: " + err.details);
+            return null;
+        }
+
         if (res.ok) {
             const data = await res.json();
             UI.statusPill.textContent = "Connected";
@@ -82,6 +90,13 @@ async function sendRemoteData(encrypted) {
 
         if (res.status === 403) {
             showToast("Failed to sync: This ID is locked to another code.");
+            return false;
+        }
+
+        if (res.status === 503) {
+            const err = await res.json();
+            UI.statusPill.textContent = "DB Error: " + (err.details ? err.details.substring(0, 15) : "Offline");
+            UI.statusPill.className = "status-pill status-offline";
             return false;
         }
 
